@@ -13,7 +13,7 @@ api_index = 0  # Track which API key is being used
 # Constants
 MODEL_NAME = "deepseek-ai/DeepSeek-R1"  # Ensure DeepSeek is available
 FILE_PATH = "4_updated_professor_data.csv"
-BATCH_SIZE = 500  # Adjust batch size based on dataset size and API limits
+BATCH_SIZE = 1000  # Adjust batch size based on dataset size and API limits
 
 def get_client():
     """Get a Together AI client with the next API key."""
@@ -67,9 +67,6 @@ def batch_process_and_rank(user_query):
         start_idx = i * BATCH_SIZE
         end_idx = start_idx + BATCH_SIZE
         df_batch = df.iloc[start_idx:end_idx]
-
-        st.write(f"Processing batch {i+1} of {num_batches}...")  # Show batch progress
-
         batch_response = process_batch(df_batch, user_query)
         all_responses.append(batch_response)
 
@@ -84,7 +81,7 @@ def batch_process_and_rank(user_query):
     {"\n\n".join(all_responses)}
 
     Return the final list in this format:
-    - Name | Institution | Research Domain | h-index | i10-index | Citations | Short Reason
+    - Name | Institution| h-index | i10-index | Citations | Short Reason
     """
     
     return together_request(aggregated_prompt)

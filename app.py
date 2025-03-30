@@ -59,8 +59,7 @@ def recommend_professors(user_query):
             "Research Domain": row["Research Interest 1"],
             "h-index": row["h-index"],
             "i10-index": row["i10-index"],
-            "Citations": row["Citations"],
-            "Reason": reason
+            "Citations": row["Citations"]
         })
     
     return pd.DataFrame(recommendations)
@@ -69,7 +68,7 @@ def recommend_professors(user_query):
 st.title("Professor Recommendation System")
 st.write("Enter a research topic or area of interest to find top professors.")
 
-user_query = st.text_input("Enter your research query:", "I want to collaborate on AI and ML research. List top professors from IITs.")
+user_query = st.text_input("Enter your research query:", "I want to collaborate on Generative AI and LLM Domains. List top professors.")
 
 if st.button("Find Professors"):
     if user_query.strip():

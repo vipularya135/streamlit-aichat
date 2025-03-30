@@ -11,9 +11,9 @@ API_KEYS = [
 api_index = 0  # Track which API key is being used
 
 # Constants
-MODEL_NAME = "meta-llama/Llama-3.3-70B-Instruct-Turbo"  # Ensure DeepSeek is available
+MODEL_NAME = "deepseek-ai/DeepSeek-R1"  # Ensure DeepSeek is available
 FILE_PATH = "4_updated_professor_data.csv"
-BATCH_SIZE = 1000  # Adjust batch size based on dataset size and API limits
+BATCH_SIZE = 500  # Adjust batch size based on dataset size and API limits
 
 def get_client():
     """Get a Together AI client with the next API key."""
@@ -34,39 +34,60 @@ def together_request(prompt):
     except Exception as e:
         return f"Error: API request failed - {e}"
 
-def rank_professors(df, query):
-    """Rank professors based on keyword matching and weighted scoring."""
-    keywords = query.lower().split()
-    df["match_score"] = df.apply(
-        lambda row: sum(kw in row["Research Interest 1"].lower() + row["Research Interest 2"].lower() for kw in keywords),
-        axis=1
-    )
-    
-    # Weighted ranking formula
-    df["final_score"] = df["match_score"] * 5 + df["h-index"] * 0.5 + df["i10-index"] * 0.3 + df["Citations"] * 0.2
-    
-    return df.sort_values(by="final_score", ascending=False).head(5)
+def process_batch(df_batch, user_query):
+    """Send a batch of professor data to DeepSeek AI for ranking."""
+    dataset_text = df_batch.to_csv(index=False)
 
-def recommend_professors(user_query):
-    """Process user queries and recommend professors."""
+    # Formulate the LLM prompt
+    prompt = f"""
+    You are an expert in recommending top professors for research collaboration.
+    The user query is: "{user_query}".
+
+    Here is a batch of professor data:
+    {dataset_text}
+
+    Your task:
+    - Analyze the dataset.
+    - Select the top 2 most relevant professors.
+    - Provide a short reason (within 20 words) for each recommendation.
+
+    Return the response in a structured format:
+    - Name | Institution | Research Domain | h-index | i10-index | Citations | Short Reason
+    """
+
+    return together_request(prompt)
+
+def batch_process_and_rank(user_query):
+    """Divide dataset into batches, send requests, and aggregate responses."""
     df = pd.read_csv(FILE_PATH)
-    df[["h-index", "i10-index", "Citations"]] = df[["h-index", "i10-index", "Citations"]].apply(pd.to_numeric, errors="coerce")
+    num_batches = math.ceil(len(df) / BATCH_SIZE)
+    all_responses = []
+
+    for i in range(num_batches):
+        start_idx = i * BATCH_SIZE
+        end_idx = start_idx + BATCH_SIZE
+        df_batch = df.iloc[start_idx:end_idx]
+
+        st.write(f"Processing batch {i+1} of {num_batches}...")  # Show batch progress
+
+        batch_response = process_batch(df_batch, user_query)
+        all_responses.append(batch_response)
+
+    # Combine responses and pick top 5 overall
+    aggregated_prompt = f"""
+    Below are multiple professor recommendation lists from different dataset batches. Your task:
+    - Merge all responses.
+    - Rank the top 4 most relevant professors overall.
+    - Keep explanations within 20 words.
+
+    Responses:
+    {"\n\n".join(all_responses)}
+
+    Return the final list in this format:
+    - Name | Institution | Research Domain | h-index | i10-index | Citations | Short Reason
+    """
     
-    ranked_professors = rank_professors(df, user_query)
-    recommendations = []
-    
-    for _, row in ranked_professors.iterrows():
-        prompt = f"""Explain why the following professor is recommended:
-        - Name: {row["Name"]}
-        - Institution: {row["College/Company"]}
-        - Research Domain: {row["Research Interest 1"]}
-        - h-index: {row["h-index"]}
-        - i10-index: {row["i10-index"]}
-        - Citations: {row["Citations"]}
-        """
-        recommendations.append(together_request(prompt))
-    
-    return recommendations
+    return together_request(aggregated_prompt)
 
 # Streamlit App
 st.title("Professor Recommendation System")
@@ -76,9 +97,8 @@ user_query = st.text_input("Enter your research query:", "I want to collaborate 
 
 if st.button("Find Professors"):
     if user_query.strip():
-        st.write("### Top Recommended Professors:")
-        recommendations = recommend_professors(user_query)
-        for idx, rec in enumerate(recommendations, 1):
-            st.markdown(f"**{idx}. {rec}**")
+        st.write("### AI-Generated Recommendations:")
+        final_response = batch_process_and_rank(user_query)
+        st.text_area("Professor Recommendations", final_response, height=300)
     else:
         st.warning("Please enter a valid query.")

@@ -25,7 +25,7 @@ def rank_professors(df, query):
     """Rank professors based on keyword matching and weighted scoring."""
     keywords = query.lower().split()
     df["match_score"] = df.apply(
-        lambda row: sum(kw in row["Research Interest 1"].lower() + row["Research Interest 2"].lower() for kw in keywords),
+        lambda row: sum(kw in (str(row["Research Interest 1"]) + str(row["Research Interest 2"])).lower() for kw in keywords),
         axis=1
     )
     
@@ -43,17 +43,27 @@ def recommend_professors(user_query):
     recommendations = []
     
     for _, row in ranked_professors.iterrows():
-        prompt = f"""Explain why the following professor is recommended:
+        prompt = f"""Provide a concise reason why this professor is recommended:
         - Name: {row["Name"]}
         - Institution: {row["College/Company"]}
         - Research Domain: {row["Research Interest 1"]}
         - h-index: {row["h-index"]}
         - i10-index: {row["i10-index"]}
         - Citations: {row["Citations"]}
+        Keep the explanation within 20 words.
         """
-        recommendations.append(together_request(prompt))
+        reason = together_request(prompt)
+        recommendations.append({
+            "Name": row["Name"],
+            "Institution": row["College/Company"],
+            "Research Domain": row["Research Interest 1"],
+            "h-index": row["h-index"],
+            "i10-index": row["i10-index"],
+            "Citations": row["Citations"],
+            "Reason": reason
+        })
     
-    return recommendations
+    return pd.DataFrame(recommendations)
 
 # Streamlit App
 st.title("Professor Recommendation System")
@@ -64,8 +74,7 @@ user_query = st.text_input("Enter your research query:", "I want to collaborate 
 if st.button("Find Professors"):
     if user_query.strip():
         st.write("### Top Recommended Professors:")
-        recommendations = recommend_professors(user_query)
-        for idx, rec in enumerate(recommendations, 1):
-            st.markdown(f"**{idx}. {rec}**")
+        recommendations_df = recommend_professors(user_query)
+        st.dataframe(recommendations_df)
     else:
         st.warning("Please enter a valid query.")

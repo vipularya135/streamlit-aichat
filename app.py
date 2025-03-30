@@ -7,7 +7,6 @@ import math
 API_KEYS = [
     "6fb2a9341f8f1a3505b9306cc21069016c787e625a2f42ddef9b772c5bfc214b",
     "db15e4757785a4c6a22e37360e60d04c2d9d08ac331d70bb093fd7977df5cc39",
-    "c8e9d9b5014965200bdbf79863f175ac87123d76288681f70e454d5e55880c1d",
 ]
 api_index = 0  # Track which API key is being used
 

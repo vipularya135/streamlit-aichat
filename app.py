@@ -5,8 +5,7 @@ import math
 
 # API Keys (Alternating)
 API_KEYS = [
-    "9dff2d48515aaeaff45745aa8e54111df505345588428440581d99ec4effef8b",
-    "db15e4757785a4c6a22e37360e60d04c2d9d08ac331d70bb093fd7977df5cc39",
+    "9dff2d48515aaeaff45745aa8e54111df505345588428440581d99ec4effef8b"
 ]
 api_index = 0  # Track which API key is being used
 

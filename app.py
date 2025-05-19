@@ -10,7 +10,7 @@ API_KEYS = [
 api_index = 0  # Track which API key is being used
 
 # Constants
-MODEL_NAME = "deepseek-ai/DeepSeek-R1"  # Ensure DeepSeek is available
+MODEL_NAME = "meta-llama/Llama-3.3-70B-Instruct-Turbo"  # Ensure DeepSeek is available
 FILE_PATH = "4_updated_professor_data.csv"
 BATCH_SIZE = 1000  # Adjust batch size based on dataset size and API limits
 
